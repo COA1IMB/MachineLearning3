@@ -1,0 +1,19 @@
+15.05.2017 15:18
+Termination reason: EpochTerminationCondition
+Termination details: MaxEpochsTerminationCondition(2)
+Total epochs: 2
+Best epoch number: 1
+Score at best epoch: 0.4464625712274718
+
+Examples labeled as 0 classified by model as 0: 179 times
+Examples labeled as 0 classified by model as 1: 42 times
+Examples labeled as 1 classified by model as 0: 37 times
+Examples labeled as 1 classified by model as 1: 43 times
+
+
+==========================Scores========================================
+ Accuracy:        0,7375
+ Precision:       0,6673
+ Recall:          0,6737
+ F1 Score:        0,6705
+========================================================================

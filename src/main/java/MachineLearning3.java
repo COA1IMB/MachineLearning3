@@ -29,14 +29,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class MachineLearning3 {
@@ -45,21 +40,167 @@ public class MachineLearning3 {
     public static final int NUMBER_OF_COLUMNS = 24;
     private static final int NUM_HIDDEN_NODES = 125;
     private static final int TRAINING_TIME = 1000;
-    private static final int MAX_EPOCHS = 20;
+    private static final int MAX_EPOCHS = 2;
     private static final String LEARN_FILE_PATH = "src\\main\\resources\\learnUIC.csv";
     private static final String EVAL_FILE_PATH = "src\\main\\resources\\evalUIC.csv";
+    public static List<String> log = new ArrayList<String>();
 
     public static void main(String[] args) {
 
         evalCVS();
+        String timeLog = new SimpleDateFormat("dd.MM.yyyy HH:mm").format(Calendar.getInstance().getTime());
+        log.add(timeLog);
 
         List<List<String>> data = getDataAsList();
         data = normalize(data);
+
         networkLearn(data);
 
         List<List<String>> dataEval = getEvalDataAsList();
         dataEval = normalizeEvalData(dataEval);
+
         evaluateNetwork(dataEval);
+        writeLogFile();
+    }
+
+    private static void evalCVS() {
+
+
+        try {
+            String fileName = LEARN_FILE_PATH;
+            BufferedReader br = null;
+            String sCurrentLine;
+            br = new BufferedReader(new FileReader(fileName));//file name with path
+            String [] parts1 = new String [23];
+            int x = 0;
+
+            while ((sCurrentLine = br.readLine()) != null) {
+                for (int i = 0; i < sCurrentLine.length(); i++){
+                    char c = sCurrentLine.charAt(i);
+                    if(Character.toString(c).equals(",")){
+                        x++;
+                    }
+                }
+                if(x == 23){
+                    x = 0;
+                    continue;
+                }else{
+                    System.out.println("Problem: " + x + "  " + sCurrentLine);
+                    x = 0;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static List<List<String>> getDataAsList() {
+
+        ArrayList<List<String>> data = null;
+        try {
+            String fileName = LEARN_FILE_PATH;
+            BufferedReader br = null;
+            String sCurrentLine;
+            br = new BufferedReader(new FileReader(fileName));//file name with path
+            data = new ArrayList<List<String>>();
+
+            while ((sCurrentLine = br.readLine()) != null) {
+                String[] parts1 = sCurrentLine.split(",");
+                List<String> data2 = Arrays.asList(parts1);
+                data.add(data2);
+            }
+            return data;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+
+    private static List<List<String>> getEvalDataAsList() {
+
+        ArrayList<List<String>> data = null;
+        try {
+            String fileName = EVAL_FILE_PATH;
+            BufferedReader br = null;
+            String sCurrentLine;
+            br = new BufferedReader(new FileReader(fileName));//file name with path
+            data = new ArrayList<List<String>>();
+
+            while ((sCurrentLine = br.readLine()) != null) {
+                String[] parts1 = sCurrentLine.split(",");
+                List<String> data2 = Arrays.asList(parts1);
+                data.add(data2);
+            }
+            return data;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return data;
+    }
+
+    private static List<List<String>> normalize(List<List<String>> data) {
+
+        double[] values = new double[NUMBER_OF_DATA_SETS];
+        double[] mins = new double[NUMBER_OF_COLUMNS];
+        double[] maxs = new double[NUMBER_OF_COLUMNS];
+
+        for (int j = 0; j < data.get(0).size(); j++) {
+            for (int i = 0; i < data.size(); i++) {
+                values[i] = Double.parseDouble(data.get(i).get(j));
+            }
+            mins[j] = Arrays.stream(values).min().getAsDouble();
+            maxs[j] = Arrays.stream(values).max().getAsDouble();
+        }
+        for (List<String> temp : data) {
+            for (int y = 0; y < NUMBER_OF_COLUMNS; y++) {
+                if (mins[y] != maxs[y]) {
+                    double tempValue = (Double.parseDouble(temp.get(y)) - mins[y]) / (maxs[y] - mins[y]);
+
+                    if (tempValue == 0.0) {
+                        temp.set(y, "0");
+                    } else if (tempValue == 1.0) {
+                        temp.set(y, "1");
+                    } else {
+                        temp.set(y, Double.toString(tempValue));
+                    }
+                }
+            }
+        }
+        return data;
+    }
+
+    private static List<List<String>> normalizeEvalData(List<List<String>> data) {
+        double[] values = new double[NUMBER_OF_DATA_SETS];
+        double[] mins = new double[NUMBER_OF_COLUMNS];
+        double[] maxs = new double[NUMBER_OF_COLUMNS];
+        int counterDefaults = 1;
+        int counterNonDefaults = 1;
+        List<List<String>> data2 = new ArrayList<List<String>>();
+
+        for (int j = 0; j < data.get(0).size(); j++) {
+            for (int i = 0; i < data.size(); i++) {
+                values[i] = Double.parseDouble(data.get(i).get(j));
+            }
+            mins[j] = Arrays.stream(values).min().getAsDouble();
+            maxs[j] = Arrays.stream(values).max().getAsDouble();
+        }
+        for (List<String> temp : data) {
+            for (int y = 0; y < NUMBER_OF_COLUMNS; y++) {
+                if (mins[y] != maxs[y]) {
+                    double tempValue = (Double.parseDouble(temp.get(y)) - mins[y]) / (maxs[y] - mins[y]);
+
+                    if (tempValue == 0.0) {
+                        temp.set(y, "0");
+                    } else if (tempValue == 1.0) {
+                        temp.set(y, "1");
+                    } else {
+                        temp.set(y, Double.toString(tempValue));
+                    }
+                }
+            }
+            data2.add(temp);
+        }
+        return data2;
     }
 
     private static void networkLearn(List<List<String>> data) {
@@ -144,6 +285,12 @@ public class MachineLearning3 {
         System.out.println("Best epoch number: " + result.getBestModelEpoch());
         System.out.println("Score at best epoch: " + result.getBestModelScore());
 
+        log.add("Termination reason: " + result.getTerminationReason());
+        log.add("Termination details: " + result.getTerminationDetails());
+        log.add("Total epochs: " + result.getTotalEpochs());
+        log.add("Best epoch number: " + result.getBestModelEpoch());
+        log.add("Score at best epoch: " + result.getBestModelScore());
+
         File locationToSave = new File("C:\\Users\\fabcot01\\IdeaProjects\\MachineLearning3\\NeuralNetwork.zip");
         boolean saveUpdater = true;
 
@@ -154,142 +301,6 @@ public class MachineLearning3 {
         } catch (Exception e) {
             System.out.println(e.toString());
         }
-    }
-
-    private static List<List<String>> getDataAsList() {
-
-        ArrayList<List<String>> data = null;
-        try {
-            String fileName = LEARN_FILE_PATH;
-            BufferedReader br = null;
-            String sCurrentLine;
-            br = new BufferedReader(new FileReader(fileName));//file name with path
-            data = new ArrayList<List<String>>();
-
-            while ((sCurrentLine = br.readLine()) != null) {
-                String[] parts1 = sCurrentLine.split(",");
-                List<String> data2 = Arrays.asList(parts1);
-                data.add(data2);
-            }
-            return data;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return data;
-    }
-    private static void evalCVS() {
-
-
-        try {
-            String fileName = LEARN_FILE_PATH;
-            BufferedReader br = null;
-            String sCurrentLine;
-            br = new BufferedReader(new FileReader(fileName));//file name with path
-            String [] parts1 = new String [23];
-            int x = 0;
-
-            while ((sCurrentLine = br.readLine()) != null) {
-                for (int i = 0; i < sCurrentLine.length(); i++){
-                    char c = sCurrentLine.charAt(i);
-                    if(c == ','){
-                        x++;
-                    }
-                }
-                if(x != 23){
-                    System.out.println("Problem: " + sCurrentLine);
-                }
-                x = 0;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static List<List<String>> normalize(List<List<String>> data) {
-
-        double[] values = new double[NUMBER_OF_DATA_SETS];
-        double[] mins = new double[NUMBER_OF_COLUMNS];
-        double[] maxs = new double[NUMBER_OF_COLUMNS];
-
-        for (int j = 0; j < data.get(0).size(); j++) {
-            for (int i = 0; i < data.size(); i++) {
-                    values[i] = Double.parseDouble(data.get(i).get(j));
-            }
-            mins[j] = Arrays.stream(values).min().getAsDouble();
-            maxs[j] = Arrays.stream(values).max().getAsDouble();
-        }
-        for (List<String> temp : data) {
-            for (int y = 0; y < NUMBER_OF_COLUMNS; y++) {
-                if (mins[y] != maxs[y]) {
-                    double tempValue = (Double.parseDouble(temp.get(y)) - mins[y]) / (maxs[y] - mins[y]);
-
-                    if (tempValue == 0.0) {
-                        temp.set(y, "0");
-                    } else if (tempValue == 1.0) {
-                        temp.set(y, "1");
-                    } else {
-                        temp.set(y, Double.toString(tempValue));
-                    }
-                }
-            }
-        }
-        return data;
-    }
-
-    private static List<List<String>> getEvalDataAsList() {
-
-        ArrayList<List<String>> data = null;
-        try {
-            String fileName = EVAL_FILE_PATH;
-            BufferedReader br = null;
-            String sCurrentLine;
-            br = new BufferedReader(new FileReader(fileName));//file name with path
-            data = new ArrayList<List<String>>();
-
-            while ((sCurrentLine = br.readLine()) != null) {
-                String[] parts1 = sCurrentLine.split(",");
-                List<String> data2 = Arrays.asList(parts1);
-                data.add(data2);
-            }
-            return data;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return data;
-    }
-
-    private static List<List<String>> normalizeEvalData(List<List<String>> data) {
-        double[] values = new double[NUMBER_OF_DATA_SETS];
-        double[] mins = new double[NUMBER_OF_COLUMNS];
-        double[] maxs = new double[NUMBER_OF_COLUMNS];
-        int counterDefaults = 1;
-        int counterNonDefaults = 1;
-        List<List<String>> data2 = new ArrayList<List<String>>();
-
-        for (int j = 0; j < data.get(0).size(); j++) {
-            for (int i = 0; i < data.size(); i++) {
-                values[i] = Double.parseDouble(data.get(i).get(j));
-            }
-            mins[j] = Arrays.stream(values).min().getAsDouble();
-            maxs[j] = Arrays.stream(values).max().getAsDouble();
-        }
-        for (List<String> temp : data) {
-            for (int y = 0; y < NUMBER_OF_COLUMNS; y++) {
-                if (mins[y] != maxs[y]) {
-                    double tempValue = (Double.parseDouble(temp.get(y)) - mins[y]) / (maxs[y] - mins[y]);
-
-                    if (tempValue == 0.0) {
-                        temp.set(y, "0");
-                    } else if (tempValue == 1.0) {
-                        temp.set(y, "1");
-                    } else {
-                        temp.set(y, Double.toString(tempValue));
-                    }
-                }
-            }
-            data2.add(temp);
-        }
-        return data2;
     }
 
     private static void evaluateNetwork(List<List<String>> dataEval) {
@@ -322,6 +333,21 @@ public class MachineLearning3 {
             INDArray predicted = model.output(features, false);
             eval.eval(lables, predicted);
         }
+
+        log.add(eval.stats());
+
         System.out.println(eval.stats());
+    }
+    private static void writeLogFile(){
+
+        try {
+            PrintWriter writer = new PrintWriter("log.txt", "UTF-8");
+            for (String temp : log) {
+                writer.println(temp);
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
